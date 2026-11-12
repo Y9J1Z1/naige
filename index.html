@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试你的奶格画像</title>
+    <style>
+        :root {
+            --primary-color: #FFDE59;
+            --hover-color: #FFD02B;
+            --bg-color: #FFF9E6;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: radial-gradient(#FFE57F 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+
+        #game-container {
+            background: #ffffff;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #E67E22;
+            letter-spacing: 2px;
+        }
+
+        /* 进度条 */
+        #progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #F0F0F0;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        #progress {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 20%;
+            transition: width 0.3s ease;
+        }
+
+        #question-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            min-height: 30px;
+        }
+
+        #options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: #FFF;
+            border: 2px solid var(--primary-color);
+            color: var(--text-color);
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+
+        .option-btn:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(255, 222, 89, 0.4);
+        }
+
+        /* 结果页样式 */
+        #result-box {
+            display: none;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .result-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #E67E22;
+        }
+
+        .result-card {
+            background: #FFF9E6;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+            line-height: 1.8;
+            border: 2px dashed var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .result-item {
+            width: 100%;
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .result-item span {
+            font-weight: bold;
+            color: #D35400;
+            margin-right: 10px;
+            min-width: 60px;
+        }
+
+        .species-img {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            margin: 10px 0;
+            border-radius: 12px;
+            background-color: #fff;
+            border: 2px solid var(--primary-color);
+        }
+
+        .restart-btn {
+            background-color: var(--hover-color);
+            border: none;
+            color: #333;
+            padding: 12px 30px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 #D4A000;
+        }
+
+        .restart-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #D4A000;
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>测试你的奶格画像</h1>
+        <div id="progress-bar"><div id="progress"></div></div>
+        
+        <div id="quiz-box">
+            <h2 id="question-title"></h2>
+            <div id="options-container"></div>
+        </div>
+
+        <div id="result-box">
+            <h2 class="result-title">您的测试结果为：</h2>
+            <div class="result-card" id="result-content">
+                <!-- 结果动态注入 -->
+            </div>
+            <button class="restart-btn" onclick="restartGame()">再测一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 记录用户答案
+        const answers = {
+            q1: '',
+            q2: '',
+            q3: '',
+            q4: '',
+            q5: ''
+        };
+
+        let currentStep = 1;
+
+        // 图片映射表 (请确保文件夹中有这些图片)
+        const imageMap = {
+            '奶蛙': 'naowa.png',
+            '奶蛋': 'naidan.png',
+            '奶豆': 'naidou.png',
+            '奶狗': 'naogou.png',
+            '奶鸡': 'naoji.png',
+            '奶兔': 'naotu.png',
+            '奶猫': 'naomao.png',
+            '豆奶': 'dounai.png'
+        };
+
+        // 题目配置
+        const questions = {
+            1: {
+                title: "1. 您是？",
+                options: ["男女混血", "沃尔玛购物袋", "武装直升机", "圆锥", "冰红茶瓶盖"]
+            },
+            2: {
+                title: "2. 您是？",
+                options: ["i人", "e人"]
+            },
+            4: {
+                title: "4. 您是？",
+                options: ["顶级s", "顶级m"]
+            },
+            5: {
+                title: "5. 您最喜欢？",
+                options: ["奶蛙", "奶蛋", "奶豆", "奶狗", "奶鸡", "奶兔", "奶猫", "豆奶"]
+            }
+        };
+
+        const quizBox = document.getElementById('quiz-box');
+        const resultBox = document.getElementById('result-box');
+        const questionTitle = document.getElementById('question-title');
+        const optionsContainer = document.getElementById('options-container');
+        const progress = document.getElementById('progress');
+        const resultContent = document.getElementById('result-content');
+
+        // 渲染题目
+        function renderQuestion() {
+            // 更新进度条
+            progress.style.width = (currentStep / 5) * 100 + "%";
+            
+            let qData;
+            
+            // 处理第3题的特殊联动逻辑
+            if (currentStep === 3) {
+                qData = {
+                    title: "3. 您是？",
+                    options: answers.q2 === "i人" 
+                        ? ["infp", "infj", "istj", "isfj", "intj", "intp", "istp", "isfp"] 
+                        : ["esfp", "estp", "esfj", "enfp", "entp", "estj", "enfj", "entj"]
+                };
+            } else {
+                qData = questions[currentStep];
+            }
+
+            questionTitle.innerText = qData.title;
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = option;
+                btn.onclick = () => selectOption(option);
+                optionsContainer.appendChild(btn);
+            });
+
+            // 播放入场动画
+            quizBox.classList.remove('slide-in');
+            void quizBox.offsetWidth; // 触发重绘
+            quizBox.classList.add('slide-in');
+        }
+
+        // 用户选择选项
+        function selectOption(option) {
+            answers['q' + currentStep] = option;
+
+            // 如果修改了第2题，重置第3题的答案
+            if (currentStep === 2) {
+                answers.q3 = '';
+            }
+
+            if (currentStep < 5) {
+                currentStep++;
+                renderQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        // 展示结果
+        function showResult() {
+            quizBox.style.display = 'none';
+            resultBox.style.display = 'block';
+            progress.style.width = '100%';
+
+            const speciesText = answers.q5;
+            const speciesImg = imageMap[speciesText];
+
+            resultContent.innerHTML = `
+                <div class="result-item" style="flex-direction: column; align-items: flex-start;">
+                    <div><span>物种：</span>${speciesText}</div>
+                    <img src="${speciesImg}" alt="${speciesText}" class="species-img" onerror="this.src='https://via.placeholder.com/150?text=图片丢失'">
+                </div>
+                <div class="result-item"><span>性别：</span>${answers.q1}</div>
+                <div class="result-item"><span>人格：</span>${answers.q2} - ${answers.q3}</div>
+                <div class="result-item"><span>属性：</span>${answers.q4}</div>
+            `;
+        }
+
+        // 重新开始
+        function restartGame() {
+            currentStep = 1;
+            answers.q1 = answers.q2 = answers.q3 = answers.q4 = answers.q5 = '';
+            progress.style.width = '20%';
+            resultBox.style.display = 'none';
+            quizBox.style.display = 'block';
+            renderQuestion();
+        }
+
+        // 初始化游戏
+        renderQuestion();
+
+    </script>
+</body>
+</html>
